@@ -1,0 +1,34 @@
+##fileformat=VCFv4.2
+##FILTER=<ID=PASS,Description="All filters passed">
+##bcftoolsVersion=1.21+htslib-1.21
+##bcftoolsCommand=mpileup -f Scaffold_3_exon1_4.fasta SQK-RBK114-96_barcode01.m.bam SQK-RBK114-96_barcode02.m.bam SQK-RBK114-96_barcode03.m.bam SQK-RBK114-96_barcode04.m.bam SQK-RBK114-96_barcode05.m.bam SQK-RBK114-96_barcode06.m.bam SQK-RBK114-96_barcode07.m.bam SQK-RBK114-96_barcode08.m.bam SQK-RBK114-96_barcode09.m.bam SQK-RBK114-96_barcode10.m.bam SQK-RBK114-96_barcode11.m.bam SQK-RBK114-96_barcode12.m.bam SQK-RBK114-96_barcode13.m.bam SQK-RBK114-96_barcode14.m.bam SQK-RBK114-96_barcode15.m.bam SQK-RBK114-96_barcode16.m.bam SQK-RBK114-96_barcode17.m.bam SQK-RBK114-96_barcode18.m.bam SQK-RBK114-96_barcode19.m.bam SQK-RBK114-96_barcode20.m.bam
+##reference=file://Scaffold_3_exon1_4.fasta
+##contig=<ID=Scaffold_3_exon1-4,length=28629>
+##ALT=<ID=*,Description="Represents allele(s) other than observed.">
+##filter="AF = 0.05"
+##INFO=<ID=INDEL,Number=0,Type=Flag,Description="Indicates that the variant is an INDEL.">
+##INFO=<ID=IDV,Number=1,Type=Integer,Description="Maximum number of raw reads supporting an indel">
+##INFO=<ID=IMF,Number=1,Type=Float,Description="Maximum fraction of raw reads supporting an indel">
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Raw read depth">
+##INFO=<ID=VDB,Number=1,Type=Float,Description="Variant Distance Bias for filtering splice-site artefacts in RNA-seq data (bigger is better)",Version="3">
+##INFO=<ID=RPBZ,Number=1,Type=Float,Description="Mann-Whitney U-z test of Read Position Bias (closer to 0 is better)">
+##INFO=<ID=MQBZ,Number=1,Type=Float,Description="Mann-Whitney U-z test of Mapping Quality Bias (closer to 0 is better)">
+##INFO=<ID=BQBZ,Number=1,Type=Float,Description="Mann-Whitney U-z test of Base Quality Bias (closer to 0 is better)">
+##INFO=<ID=MQSBZ,Number=1,Type=Float,Description="Mann-Whitney U-z test of Mapping Quality vs Strand Bias (closer to 0 is better)">
+##INFO=<ID=SCBZ,Number=1,Type=Float,Description="Mann-Whitney U-z test of Soft-Clip Length Bias (closer to 0 is better)">
+##INFO=<ID=SGB,Number=1,Type=Float,Description="Segregation based metric, http://samtools.github.io/bcftools/rd-SegBias.pdf">
+##INFO=<ID=MQ0F,Number=1,Type=Float,Description="Fraction of MQ0 reads (smaller is better)">
+##FORMAT=<ID=PL,Number=G,Type=Integer,Description="List of Phred-scaled genotype likelihoods">
+##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allelic depths (high-quality bases)">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Allele count in genotypes for each ALT allele, in the same order as listed">
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total number of alleles in called genotypes">
+##INFO=<ID=DP4,Number=4,Type=Integer,Description="Number of high-quality ref-forward , ref-reverse, alt-forward and alt-reverse bases">
+##INFO=<ID=MQ,Number=1,Type=Integer,Description="Average mapping quality">
+##bcftools_callVersion=1.21+htslib-1.21
+##bcftools_callCommand=call -mv -Ob -o anolis_variants.vcf anolis_raw.bcf; Date=Thu Nov  7 10:20:24 2024
+##INFO=<ID=AF,Number=A,Type=Float,Description="Allele frequency">
+##bcftools_pluginVersion=1.21+htslib-1.21
+##bcftools_pluginCommand=plugin fill-tags -Oz -o anolis_with_af.vcf -- anolis_variants.vcf -t AF; Date=Tue Nov 12 11:22:38 2024
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SQK-RBK114-96_barcode01.m.bam	SQK-RBK114-96_barcode02.m.bam	SQK-RBK114-96_barcode03.m.bam	SQK-RBK114-96_barcode04.m.bam	SQK-RBK114-96_barcode05.m.bam	SQK-RBK114-96_barcode06.m.bam	SQK-RBK114-96_barcode07.m.bam	SQK-RBK114-96_barcode08.m.bam	SQK-RBK114-96_barcode09.m.bam	SQK-RBK114-96_barcode10.m.bam	SQK-RBK114-96_barcode11.m.bam	SQK-RBK114-96_barcode12.m.bam	SQK-RBK114-96_barcode13.m.bam	SQK-RBK114-96_barcode14.m.bam	SQK-RBK114-96_barcode15.m.bam	SQK-RBK114-96_barcode16.m.bam	SQK-RBK114-96_barcode17.m.bam	SQK-RBK114-96_barcode18.m.bam	SQK-RBK114-96_barcode19.m.bam	SQK-RBK114-96_barcode20.m.bam
+Scaffold_3_exon1-4	17791	.	G	C	458.258	.	AC=2;AF=0.05;AN=40;BQBZ=3.42871;DP=4835;DP4=1580,2933,82,222;MQ=59;MQ0F=0;MQBZ=-0.213989;MQSBZ=-0.414022;RPBZ=1.61835;SCBZ=-0.595934;SGB=-4618.75;VDB=1.38053e-17	GT:PL:AD	0/0:0,255,255:120,0	0/0:0,255,255:249,1	0/0:0,255,255:234,0	0/1:255,0,255:142,123	0/0:0,255,255:231,2	0/0:0,255,255:301,0	0/0:0,255,255:274,0	0/0:0,255,255:254,0	0/0:0,255,255:293,1	0/0:0,255,255:246,0	0/0:0,151,255:50,0	0/0:0,255,255:242,0	0/0:0,255,255:233,0	0/0:0,255,255:236,0	0/0:0,255,255:207,0	0/0:0,255,255:282,0	0/0:0,255,255:269,0	0/0:0,255,255:239,0	0/0:0,255,255:279,0	0/1:255,0,255:132,118
