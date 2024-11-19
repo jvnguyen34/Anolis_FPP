@@ -46,7 +46,7 @@
 
 # **bcftools-1.21** <br />
 - build folder for the bcftools software <br />
-# **samtools-1.21**: build folder for the samtools software <br />
+# **samtools-1.21** <br />
 - build folder for the samtools software <br />
 
   
