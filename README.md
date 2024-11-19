@@ -1,4 +1,4 @@
-#This document outlines the contents of the ANOLIS_FPP repository.
+Welcome! This following text outlines the contents of the ANOLIS_FPP repository. 
 
 #FOLDER - bcftools-1.21: build folder for the bcftools software 
 #FOLDER - samtools-1.21: build folder for the samtools software
