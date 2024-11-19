@@ -1,0 +1,159 @@
+##—————————Set up git repository————————————
+
+#Create working directory 
+mkdir anolis_fpp
+cd anolis_fpp
+
+#Copy dataset from local machine to cluster
+#Open new terminal and enter the following, will be prompted to enter username and password
+scp -r /Users/johnnguyen/Documents/Projects/Anole_FPP/anole_fpp_nanopore/john_data_20barcodes_hq jvnguy45@opuntia.rcdc.uh.edu:/project/stuckert/jvnguy45/anolis_fpp/raw_data
+scp /Users/johnnguyen/Documents/Projects/Anole_FPP/anole_fpp_nanopore/exon2_fpp.fasta jvnguy45@opuntia.rcdc.uh.edu:/project/stuckert/jvnguy45/anolis_fpp/raw_data
+
+#Configure git on the cluster
+git config --global user.name "John Nguyen"
+git config --global user.email jvnguy45@cougarnet.uh.edu
+git config --global core.editor nano 
+
+#Initialize git repo in anolis_fpp directory, create repository, do initial commit for raw_data
+git init #Initialized empty Git repository in /project/stuckert/jvnguy45/anolis_fpp/.git/
+git config --global init.defaultBranch anolis_main #change branch name to anolis_main
+git status #check if branch name was properly changed
+git add raw_data
+git commit -m "Initial commit: Upload raw data"
+
+#Create key to authenticate github repository 
+ssh-keygen -t ed25519 -C "jvnguyen34@uh.edu"
+#Your public key has been saved in /project/stuckert/jvnguy45/.ssh/id_ed25519.pub
+#Generate PAT on Github; this is the password when you push 
+
+#Push items to github repository
+git branch -M anolis_main
+git remote add origin https://github.com/jvnguyen34/Anolis_FPP.git
+git push -u origin anolis_main
+
+##—————————Download software—————————
+wget https://github.com/samtools/samtools/releases/download/1.21/samtools-1.21.tar.bz2 #samtools
+tar -vxjf samtools-1.21.tar.bz2
+cd samtools-1.21
+./configure --prefix=/project/stuckert/jvnguy45/anolis_fpp/samtools-1.2
+make 
+make install
+./samtools
+
+wget https://github.com/samtools/bcftools/releases/download/1.21/bcftools-1.21.tar.bz2 #bcftools
+tar -vxjf bcftools-1.21.tar.bz2
+cd bcftools-1.21
+./configure --prefix=/project/stuckert/jvnguy45/anolis_fpp/bcftools-1.21
+make 
+make install
+./bcftools
+
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh #plink via miniconda install
+shasum -a 256 Miniconda3-latest-Linux-x86_64.sh #verify installer hashes
+bash Miniconda3-latest-Linux-x86_64.sh #install miniconda
+
+conda install bioconda::plink2 #install plink2
+conda install bioconda::vcftools #install vcftools
+conda list #verify these programs have been installed
+
+##—————————Variant Calling————————————
+#Identifies variation in DNA sequences (SNPS and indels) aligned to the reference 
+
+#Index the reference fasta; indexing helps Samtools locate specific regions quickly without parsing through the entire file
+/project/stuckert/jvnguy45/anolis_fpp/samtools-1.21/samtools faidx Scaffold_3_exon1_4.fasta 
+
+#Index the .bam files
+for file in SQK-RBK114-96_barcode*.m.bam
+do
+/project/stuckert/jvnguy45/anolis_fpp/samtools-1.21/samtools index "$file"
+done
+
+#Sort the .bam files
+for file in SQK-RBK114-96_barcode*.m.bam
+do
+/project/stuckert/jvnguy45/anolis_fpp/samtools-1.21/samtools sort -o "${file%.bam}.sorted.bam" "$file"
+done
+
+#Combine all of the .bam files using bcftools mpileup 
+/project/stuckert/jvnguy45/anolis_fpp/bcftools-1.21/bcftools mpileup -f Scaffold_3_exon1_4.fasta SQK-RBK114-96_barcode*.m.bam > anolis_raw.bcf 
+
+#Call variants using bcftools call
+/project/stuckert/jvnguy45/anolis_fpp/bcftools-1.21/bcftools call -mv -Ob -o anolis_variants.vcf anolis_raw.bcf
+less -S anolis_variants.vcf #view the file 
+
+#Create a new .vcf file with allele frequencies (AF) added to the INFO 
+/project/stuckert/jvnguy45/anolis_fpp/bcftools-1.21/bcftools +fill-tags anolis_variants.vcf -Oz -o anolis_with_af.vcf -- -t AF
+
+#Filter to include only bi-allelic sites
+/project/stuckert/jvnguy45/anolis_fpp/bcftools-1.21/bcftools view -H anolis_with_af.vcf | wc -l #271 sites originally
+/project/stuckert/jvnguy45/anolis_fpp/bcftools-1.21/bcftools view -m2 -M2 anolis_with_af.vcf -o anolis_with_af_biallelic.vcf #filter for bi-allelic
+/project/stuckert/jvnguy45/anolis_fpp/bcftools-1.21/bcftools view -H anolis_with_af_biallelic.vcf | wc -l #254 sites now
+
+#Filter for read depth (DP) >20 
+/project/stuckert/jvnguy45/anolis_fpp/bcftools-1.21/bcftools filter -i 'DP>20' -o anolis_with_af_biallelic_DP.vcf -O v anolis_with_af_biallelic.vcf
+/project/stuckert/jvnguy45/anolis_fpp/bcftools-1.21/bcftools view -H anolis_with_af_biallelic_DP.vcf | wc -l #29 sites now
+
+#Filter for missing data (20%), moderate threshold due to high error rates from Nanopore
+/project/stuckert/jvnguy45/anolis_fpp/bcftools-1.21/bcftools view -i 'F_MISSING <= 0.2' anolis_with_af_biallelic_DP.vcf -o anolis_with_af_biallelic_DPMD.vcf
+/project/stuckert/jvnguy45/anolis_fpp/bcftools-1.21/bcftools view -H anolis_with_af_biallelic_DPMD.vcf | wc -l #29 sites still, all sites passed filter
+
+#Filter for QUAL score >20 (99% accuracy)
+/project/stuckert/jvnguy45/anolis_fpp/bcftools-1.21/bcftools view -i 'QUAL>20' anolis_with_af_biallelic_DPMD.vcf -o anolis_with_af_biallelic_DPMDQU.vcf
+/project/stuckert/jvnguy45/anolis_fpp/bcftools-1.21/bcftools view -H anolis_with_af_biallelic_DPMDQU.vcf | wc -l #29 sites still, all sites passed filter
+
+##—————————Association Analysis—————————
+#Create a phenotype file in Excel and export as tab-delimited text file (.txt) 
+
+#Upload the phenotype file from the local machine to the cluster 
+scp /Users/johnnguyen/Documents/Grad_School/2024_Grad_Year1/Bioinformatics/phenotype.txt jvnguy45@opuntia.rcdc.uh.edu:/project/stuckert/jvnguy45/anolis_fpp/raw_data
+mv phenotype.txt phenotype.phe #rename the file to have a .phe suffix which is necessary for the plink2 association analysis
+
+#Convert the .vcf file to plink2 format
+plink2 --vcf /project/stuckert/jvnguy45/anolis_fpp/processed_data/anolis_with_af_biallelic_DPMDQU.vcf --allow-extra-chr --make-pgen --out anolisplink
+
+#Run the association analysis
+##———————Plink Script————————————————————————————————————————————————————————
+
+#!/bin/bash
+
+#Define file names
+pfile="/project/stuckert/jvnguy45/anolis_fpp/processed_data/glm/anolisplink"
+pheno_file="/project/stuckert/jvnguy45/anolis_fpp/raw_data/phenotype.phe"
+output_dir="/project/stuckert/jvnguy45/anolis_fpp/processed_data/glm"
+mkdir -p "$output_dir"
+
+#Association analysis using GLM in plink2
+plink2 --pfile $pfile \
+       --pheno $pheno_file \
+       --pheno-name Phenotype \
+       --glm \
+       --allow-extra-chr \
+       --threads 20 \
+       --memory 60000 \
+       --out $output_dir/association
+
+##————————————————————————————————————————————————————————————————————————
+
+##—————Exporting data for further analysis——————————————
+#Convert the output file, which is a tab-delimited file, into a .csv for further analysis and visualization
+perl -lpe 's/"/""/g; s/^|$/"/g; s/\t/","/g' association.Phenotype.glm.logistic > associationoutput.csv
+
+#Export the .csv file from the cluster to the local machine. Transition to R 
+scp jvnguy45@opuntia.rcdc.uh.edu:/project/stuckert/jvnguy45/anolis_fpp/processed_data/glm/associationoutput.csv /Users/johnnguyen/Documents/Grad_School/2024_Grad_Year1/Bioinformatics
+
+#Export the allele frequency information from the .vcf file to graph allele frequencies in R
+/project/stuckert/jvnguy45/anolis_fpp/bcftools-1.21/bcftools query -f '%CHROM\t%POS\t%AF\n' anolis_with_af_biallelic_DPMDQU.vcf > allele_frequencies.txt
+scp jvnguy45@opuntia.rcdc.uh.edu:/project/stuckert/jvnguy45/anolis_fpp/processed_data/allele_frequencies.txt /Users/johnnguyen/Documents/Grad_School/2024_Grad_Year1/Bioinformatics
+
+#Export genotypes from .vcf file to calculate genotype frequencies 
+/project/stuckert/jvnguy45/anolis_fpp/bcftools-1.21/bcftools query -H -f '%CHROM\t%POS[\t%SAMPLE=%GT]\n' anolis_with_af_biallelic_DPMDQU.vcf | sed 's/\t/,/g' > genotypes_final.csv
+scp jvnguy45@opuntia.rcdc.uh.edu:/project/stuckert/jvnguy45/anolis_fpp/processed_data/genotypes_final.csv /Users/johnnguyen/Documents/Grad_School/2024_Grad_Year1/Bioinformatics
+
+#Import figures from local machine to cluster
+scp /Users/johnnguyen/Documents/Projects/Anole_FPP/anole_fpp_nanopore/anolis_fpp_analysis/allele_freq.png jvnguy45@opuntia.rcdc.uh.edu:/project/stuckert/jvnguy45/anolis_fpp/figures
+scp /Users/johnnguyen/Documents/Projects/Anole_FPP/anole_fpp_nanopore/anolis_fpp_analysis/genotype_freq.png jvnguy45@opuntia.rcdc.uh.edu:/project/stuckert/jvnguy45/anolis_fpp/figures
+scp /Users/johnnguyen/Documents/Projects/Anole_FPP/anole_fpp_nanopore/anolis_fpp_analysis/or_snp.png jvnguy45@opuntia.rcdc.uh.edu:/project/stuckert/jvnguy45/anolis_fpp/figures
+
+#Import the R script from local machine to cluster
+scp /Users/johnnguyen/Documents/Projects/Anole_FPP/anole_fpp_nanopore/anolis_fpp_analysis/fpp_bioinformatics.R jvnguy45@opuntia.rcdc.uh.edu:/project/stuckert/jvnguy45/anolis_fpp/scripts
+
